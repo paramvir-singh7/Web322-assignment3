@@ -1,63 +1,120 @@
 /********************************************************************************
-*  WEB322 – Assignment 03
+*  WEB322 – Assignment 04
+*  
 *  I declare that this assignment is my own work in accordance with Seneca's
 *  Academic Integrity Policy:
-*  https://www.senecacollege.ca/about/policies/academic-integrity-policy.html
-*  Name: Paramvir Singh Student ID: 112124243 Date: 2025-06-12
-*  Published URL: __________________________
+*  
+*  https://www.senecapolytechnic.ca/about/policies/academic-integrity-policy.html
+*  
+*  Name: Paramvir Singh  Student ID: 112124243  Date: July 4, 2025
+*  Published URL: 
 ********************************************************************************/
 
 const express = require("express");
 const path = require("path");
+const projectData = require("./modules/projects");
+
 const app = express();
-const HTTP_PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8080;
 
-const projectService = require("./modules/projects");
+// Set EJS as view engine
+app.set('view engine', 'ejs');
+app.set('views', __dirname + '/views');
 
-// Serve static files from public folder (like main.css)
-app.use(express.static("public"));
+// Serve static CSS/JS/images
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Home route
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "/views/home.html"));
+  res.render("home", { page: "/" });
 });
 
 // About route
 app.get("/about", (req, res) => {
-  res.sendFile(path.join(__dirname, "/views/about.html"));
+  res.render("about", { page: "/about" });
 });
 
-// Projects (with optional sector filter)
-app.get("/solutions/projects", (req, res) => {
-  const sector = req.query.sector;
-  if (sector) {
-    projectService.getProjectsBySector(sector)
-      .then(data => res.json(data))
-      .catch(err => res.status(404).send(err));
-  } else {
-    projectService.getAllProjects()
-      .then(data => res.json(data))
-      .catch(err => res.status(404).send(err));
-  }
-});
+// Initialize project data first
+projectData.initialize().then(() => {
 
-// Project by ID
-app.get("/solutions/projects/:id", (req, res) => {
-  projectService.getProjectById(req.params.id)
-    .then(data => res.json(data))
-    .catch(err => res.status(404).send(err));
-});
+  /** 
+   * /solutions/projects
+   * With optional sector filtering
+   */
+  app.get("/solutions/projects", async (req, res) => {
+    try {
+      let projects = await projectData.getAllProjects();
+      const sector = req.query.sector;
 
-// 404 - must be last
-app.use((req, res) => {
-  res.status(404).sendFile(path.join(__dirname, "/views/404.html"));
-});
+      if (sector) {
+        projects = projects.filter(p => p.sector === sector);
+        if (projects.length === 0) {
+          return res.status(404).render("404", {
+            page: '',
+            message: `No projects found for sector "${sector}".`
+          });
+        }
+      }
 
-// Start server
-projectService.initialize().then(() => {
-  app.listen(HTTP_PORT, () => {
-    console.log("Server listening on: " + HTTP_PORT);
+      res.render("projects", { 
+        page: "/solutions/projects",
+        projects 
+      });
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).render("404", {
+        page: '',
+        message: "Server error while retrieving projects."
+      });
+    }
   });
-}).catch(err => {
-  console.log("Error initializing project service:", err);
+
+  /**
+   * /solutions/projects/:id
+   * Show single project detail
+   */
+  app.get("/solutions/projects/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const project = await projectData.getProjectById(id);
+
+      if (!project) {
+        return res.status(404).render("404", {
+          page: '',
+          message: `No project found with ID ${id}.`
+        });
+      }
+
+      res.render("project", { 
+        page: '', 
+        project 
+      });
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).render("404", {
+        page: '',
+        message: "Server error while retrieving the project."
+      });
+    }
+  });
+
+  /**
+   * Catch-all 404 for undefined routes
+   */
+  app.use((req, res) => {
+    res.status(404).render("404", {
+      page: '',
+      message: "The page you are looking for does not exist."
+    });
+  });
+
+  // Start server
+  app.listen(PORT, () => {
+    console.log(`Server listening at http://localhost:${PORT}`);
+  });
+
+}).catch((err) => {
+  console.error("Failed to initialize project data:", err);
 });

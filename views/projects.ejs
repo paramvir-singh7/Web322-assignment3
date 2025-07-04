@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Projects - Climate Solutions</title>
+  <link href="/css/main.css" rel="stylesheet" />
+</head>
+<body class="bg-base-100">
+  <%- include('partials/navbar', {page: "/solutions/projects"}) %>
+
+  <div class="container mx-auto mt-10">
+    <div class="hero bg-base-300 rounded-box p-10">
+      <div class="hero-content text-center">
+        <div class="max-w-xl">
+          <h1 class="text-5xl font-bold mb-4">Projects</h1>
+          <p class="py-4">Browse our climate solution projects below. Filter by sector using the navbar or links.</p>
+          <div class="flex flex-wrap gap-2 justify-center">
+            <a href="/solutions/projects?sector=Land Sinks" class="btn">Land Sinks</a>
+            <a href="/solutions/projects?sector=Industry" class="btn">Industry</a>
+            <a href="/solutions/projects?sector=Electricity" class="btn">Electricity</a>
+            <a href="/solutions/projects" class="btn">All</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto mt-10">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Sector</th>
+            <th>Summary</th>
+            <th>Link</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% projects.forEach(project => { %>
+            <tr>
+              <td><%= project.title %></td>
+              <td>
+                <a href="/solutions/projects?sector=<%= encodeURIComponent(project.sector) %>" class="btn btn-sm">
+                  <%= project.sector %>
+                </a>
+              </td>
+              <td><%= project.summary_short %></td>
+              <td>
+                <a href="/solutions/projects/<%= project.id %>" class="btn btn-primary btn-sm">
+                  Details
+                </a>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>
